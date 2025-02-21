@@ -1,48 +1,81 @@
+from datetime import datetime,timezone
 import asyncio
-import time
 import reflex as rx
 from ..ui.base import base_page
 from .. import navigation 
-import time
+from sqlmodel import Field
+import sqlalchemy
+
+
+
+def get_utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class ContactEntryModel(rx.Model , table= True):
+    first_name: str
+    last_name: str | None = None
+    email: str | None = None # = Field(Nullable= True)
+    message: str
+    created_at: datetime = Field(
+        default_factory = get_utc_now, 
+        sa_type = sqlalchemy.DateTime(timezone = True), 
+        sa_column_kwargs ={
+            'server_default': sqlalchemy.func.now()
+        },
+        nullable = False 
+    )
 
 class ContactState(rx.State):
     form_data: dict = {}
     did_submit: bool = False
     timeleft: int = 5
 
-    @rx.var
-    def timeleft_label(self) -> str:
-        if self.timeleft < 1 :
-            return "no time left"
-        return f"{self.timeleft} seconds"
+    #@rx.var
+    #def timeleft_label(self) -> str:
+    #    if self.timeleft < 1 :
+    #        return "no time left"
+    #    return f"{self.timeleft} seconds"
     
+
         # we don't have first_name in ContactState but we have it in dict of form
     @rx.var
     def thank_you(self) ->  str :
         first_name = self.form_data.get("first_name") or ""
         return f"Thank you {first_name}".strip() + "!"
     
+
     @rx.event
     async def handle_submit(self, form_data: dict):
         """Handle the form submit."""
         self.form_data = form_data
-        self.did_submit = True
-        #sleep
-        yield
+        data = {}
+        for k , v in form_data.items():
+            if v == "" or v is None:
+                continue
+            data[k]=v
+
+        with rx.session() as session:
+            db_entry = ContactEntryModel(
+                **form_data
+            )
+            session.add(db_entry)
+            session.commit()
+            self.did_submit = True
+            #sleep
+            yield
         await asyncio.sleep(2)
         self.did_submit = False
         yield
 
 
-    async def start_timer(self):
-        while self.timeleft > 0 :
-            await asyncio.sleep(1)
-            self.timeleft -= 1
-            yield
+    #async def start_timer(self):
+    #    while self.timeleft > 0 :
+    #        await asyncio.sleep(1)
+    #        self.timeleft -= 1
+    #        yield
 
-@rx.page(
-        on_load= ContactState.start_timer, 
-        route = navigation.routes.CONTACT_US_ROUTE)
+@rx.page(route = navigation.routes.CONTACT_US_ROUTE)
 def contact_page() -> rx.Component:
     # Welcome Page (Index)
     my_form = rx.form(
@@ -89,7 +122,7 @@ def contact_page() -> rx.Component:
 
     my_child = rx.vstack(
             rx.heading("contact us", size="9"),
-            rx.text(ContactState.timeleft_label),
+            # rx.text(ContactState.timeleft_label),
             rx.cond(
                 ContactState.did_submit , ContactState.thank_you ,""
             ), 
