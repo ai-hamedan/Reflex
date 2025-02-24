@@ -1,11 +1,14 @@
+from typing import List
 import asyncio
 import reflex as rx
 from .model import ContactEntryModel
 
+from sqlmodel import select 
+
 class ContactState(rx.State):
     form_data: dict = {}
+    entries : List['ContactEntryModel'] = []
     did_submit: bool = False
-    timeleft: int = 5
 
    
     @rx.var
@@ -36,6 +39,16 @@ class ContactState(rx.State):
         await asyncio.sleep(2)
         self.did_submit = False
         yield
+
+
+    def list_entries(self):
+        with rx.session() as session:
+            entries = session.exec(
+                select(ContactEntryModel)                
+            ).all()
+            self.entries = entries
+            print(entries)
+
 
 
 
