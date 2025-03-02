@@ -12,8 +12,8 @@ def contact_entry_list_item(contact: model.ContactEntryModel):
         padding = '1em'        
     )
 
-def foreach_callback(text):
-    return rx.box(rx.text(text))
+# def foreach_callback(text):
+# return rx.box(rx.text(text))
 
 
 def contact_entries_list_page() -> rx.Component:    

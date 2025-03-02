@@ -16,7 +16,7 @@ def contact_form() -> rx.Component:
                  rx.input(
                     name="last_name",
                     placeholder="Last Name", 
-                    required= True,  
+                    
                     type ="text",  
                     width = "100%",               
                 ),
@@ -25,7 +25,6 @@ def contact_form() -> rx.Component:
             rx.input(
                 name="email",
                 placeholder="email", 
-                required= True,  
                 type ="email",   
                 width = "100%",              
             ),           
